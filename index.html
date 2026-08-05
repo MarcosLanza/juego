@@ -492,9 +492,40 @@ function g2Next(){
 function g2Check(sel,btn){
   if(answered) return; answered=true;
   const ok=sel===currentQ.correctNote;
-  if(ok){ btn.classList.add('correct'); score+=15; correct++; }
-  else { btn.classList.add('wrong'); lives--; wrong++; }
-  setTimeout(()=>g2Next(),1500);
+  
+  // Mostrar feedback
+  const fb=document.getElementById('g2-feedback');
+  if(ok){
+    btn.classList.add('correct');
+    score+=15; 
+    correct++;
+    fb.textContent='✅ ¡Correcto!'; 
+    fb.className='feedback-msg correct';
+  } else {
+    btn.classList.add('wrong');
+    lives--; 
+    wrong++;
+    fb.textContent='❌ Era: '+currentQ.correctNote; 
+    fb.className='feedback-msg wrong';
+  }
+  
+  // Deshabilitar todos los botones
+  document.querySelectorAll('#g2-options .option-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===currentQ.correctNote) b.classList.add('correct');
+  });
+  
+  // Actualizar vidas y puntaje
+  document.getElementById('g2-score').textContent=score;
+  document.getElementById('g2-lives').textContent='❤️'.repeat(lives);
+  
+  setTimeout(()=>{
+    if(lives<=0){
+      showResult(score,'pts');
+    } else {
+      g2Next();
+    }
+  },1500);
 }
 
 // ══════════════════════════════════════════════
@@ -540,11 +571,15 @@ function g3Next(){
         b.onclick=()=>g3Pick(n,b); p_el.appendChild(b);
     });
     showScreen('screen-g3');
+    
+    // Limpiar feedback anterior
+    document.getElementById('g3-feedback').textContent = '';
 }
 
 
 let g3Slots=[null,null,null];
 function g3Pick(n,b){
+  if(answered) return;
   let empty=g3Slots.indexOf(null);
   if(empty===-1) return;
   g3Slots[empty]=n; b.classList.add('used-note');
@@ -554,10 +589,53 @@ function g3Pick(n,b){
 }
 
 function g3Check(){
+  if(answered) return;
   answered=true;
-  const ok = g3Slots.every(n=>currentQ.correctTriad.includes(n));
-  if(ok){ score+=30; correct++; } else { lives--; wrong++; }
-  setTimeout(()=>g3Next(),2000);
+  const ok = g3Slots.every(n=>currentQ.correctTriad.includes(n)) && 
+             g3Slots.length === 3 && 
+             !g3Slots.includes(null);
+  
+  // Mostrar feedback
+  const fb=document.getElementById('g3-feedback');
+  if(ok){
+    score+=30; 
+    correct++;
+    fb.textContent='✅ ¡Tríada correcta!'; 
+    fb.className='feedback-msg correct';
+  } else {
+    lives--; 
+    wrong++;
+    fb.textContent='❌ Era: '+currentQ.correctTriad.join(', '); 
+    fb.className='feedback-msg wrong';
+  }
+  
+  // Resaltar slots correctos/incorrectos
+  for(let i=0; i<3; i++) {
+    const slot = document.getElementById('slot'+i);
+    if(currentQ.correctTriad.includes(g3Slots[i])) {
+      slot.style.borderColor = '#34d399'; // Verde para correcto
+    } else {
+      slot.style.borderColor = '#f43f5e'; // Rojo para incorrecto
+    }
+  }
+  
+  // Deshabilitar todas las notas del pool
+  document.querySelectorAll('.pool-note').forEach(b => {
+    b.disabled = true;
+  });
+  
+  // Actualizar vidas y puntaje
+  document.getElementById('g3-score').textContent=score;
+  document.getElementById('g3-lives').textContent='❤️'.repeat(lives);
+  document.getElementById('g3-check').disabled=true;
+  
+  setTimeout(()=>{
+    if(lives<=0){
+      showResult(correct,'correctas');
+    } else {
+      g3Next();
+    }
+  },2000);
 }
 
 function removeFromSlot(i){
