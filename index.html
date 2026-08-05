@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎵 TonalQuiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Nunito',sans-serif;background:#0d0d1a;min-height:100vh;display:flex;align-items:center;justify-content:center;color:white;overflow-x:hidden;}
+  .bg-orbs{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;}
+  .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.18;animation:floatOrb 12s ease-in-out infinite alternate;}
+  .orb1{width:400px;height:400px;background:#7c3aed;top:-100px;left:-100px;}
+  .orb2{width:350px;height:350px;background:#db2777;top:50%;right:-80px;animation-delay:3s;}
+  .orb3{width:300px;height:300px;background:#0ea5e9;bottom:-80px;left:30%;animation-delay:6s;}
+  @keyframes floatOrb{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,40px) scale(1.1)}}
+
+  .container{position:relative;z-index:1;width:100%;max-width:700px;padding:20px;}
+  .screen{display:none;}.screen.active{display:block;}
+  .card{background:rgba(255,255,255,0.05);backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.1);border-radius:28px;padding:36px;box-shadow:0 30px 60px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.1);}
+
+  .logo{text-align:center;font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#ec4899,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;}
+  .tagline{text-align:center;color:rgba(255,255,255,0.4);font-size:0.88rem;margin-bottom:32px;}
+  .games-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:0;}
+  .game-card{border-radius:20px;padding:22px 24px;cursor:pointer;border:2px solid transparent;transition:all 0.3s cubic...}
+  .game-card:hover{transform:translateY(-4px) scale(1.01);}
+  .game-card.g1{background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(167,139,250,0.1));border-color:rgba(167,139,250,0.4);}
+  .game-card.g1:hover{box-shadow:0 12px 30px rgba(124,58,237,0.35);}
+  .game-card.g2{background:linear-gradient(135deg,rgba(236,72,153,0.25),rgba(251,113,133,0.1));border-color:rgba(251,113,133,0.4);}
+  .game-card.g2:hover{box-shadow:0 12px 30px rgba(236,72,153,0.35);}
+  .game-card.g3{background:linear-gradient(135deg,rgba(14,165,233,0.25),rgba(56,189,248,0.1));border-color:rgba(56,189,248,0.4);}
+  .game-card.g3:hover{box-shadow:0 12px 30px rgba(14,165,233,0.35);}
+  .game-icon{font-size:2.8rem;flex-shrink:0;}
+  .game-info{flex:1;}
+  .game-title{font-size:1.1rem;font-weight:900;margin-bottom:4px;}
+  .game-desc{font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.5;}
+  .game-arrow{font-size:1.4rem;opacity:0.5;}
+
+  .back-btn{background:none;border:1px solid rgba(255,255,255,0.2);border-radius:50px;color:rgba(255,255,255,0.6);font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;padding:7px 16px;cursor:pointer;transition:all 0.2s;margin-bottom:24px;}
+  .back-btn:hover{border-color:rgba(255,255,255,0.5);color:white;}
+  .sel-title{font-size:1.6rem;font-weight:900;margin-bottom:6px;}
+  .sel-sub{color:rgba(255,255,255,0.45);font-size:0.85rem;margin-bottom:28px;}
+  .lvl-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .lvl-btn{padding:22px 10px;border:none;border-radius:20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;transition:all 0.3s cubic...}
+  .lvl-btn:hover{transform:translateY(-5px) scale(1.03);}
+  .lvl-btn.easy{background:linear-gradient(135deg,#059669,#34d399);color:#fff;box-shadow:0 8px 25px rgba(52,211,153,0.35);}
+  .lvl-btn.medium{background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1a2e;box-shadow:0 8px 25px rgba(251,191,36,0.35);}
+  .lvl-btn.hard{background:linear-gradient(135deg,#be123c,#f43f5e);color:#fff;box-shadow:0 8px 25px rgba(244,63,94,0.35);}
+  .lvl-icon{font-size:2rem;display:block;margin-bottom:8px;}
+  .lvl-name{display:block;font-size:1rem;}
+  .lvl-desc{font-size:0.65rem;font-weight:600;opacity:0.8;display:block;margin-top:4px;}
+
+  .hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .hud-pill{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50px;padding:7px 16px;font-size:0.82rem;font-weight:700;}
+  .hud-pill .val{color:#fbbf24;}
+  .progress-bar{width:100%;height:7px;background:rgba(255,255,255,0.1);border-radius:10px;overflow:hidden;margin-bottom:22px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#ec4899);border-radius:10px;transition:width 0.5s ease;}
+  .q-label{font-size:0.72rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
+
+  .scale-display{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;justify-content:center;}
+  .note-card{background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.12);border-radius:18px;padding:16px 18px;text-align:center;min-width:76px;transition:all 0.3s;position:relative;}
+  .note-card .note-name{font-size:1.4rem;font-weight:900;display:block;}
+  .note-card .revealed-degree{font-size:0.65rem;color:#fbbf24;font-weight:800;margin-top:5px;display:none;letter-spacing:0.5px;}
+  .note-card.degree-shown .revealed-degree{display:block;animation:fadeIn 0.3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  .hints-row{display:flex;align-items:center;gap:10px;margin:4px 0 16px;flex-wrap:wrap;}
+  .hint-btn{background:none;border:1px dashed rgba(255,255,255,0.25);border-radius:50px;color:rgba(255,255,255,0.55);font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:700;padding:7px 18px;cursor:pointer;transition:all 0.2s;}
+  .hint-btn:hover:not(:disabled){border-color:#fbbf24;color:#fbbf24;}
+  .hint-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .hint-dots{display:flex;gap:5px;}
+  .hint-dot{width:10px;height:10px;border-radius:50%;background:#fbbf24;transition:all 0.3s;}
+  .hint-dot.used{background:rgba(255,255,255,0.15);}
+  .hints-left{font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:700;}
+
+  .big-prompt{text-align:center;margin:20px 0;}
+  .scale-name-big{font-size:1.1rem;color:rgba(255,255,255,0.5);font-weight:700;margin-bottom:6px;}
+  .degree-big{font-size:3.5rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+  .degree-name-big{font-size:0.9rem;color:rgba(255,255,255,0.45);margin-top:6px;}
+
+  .chord-prompt{text-align:center;margin:16px 0 20px;}
+  .chord-name-big{font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .chord-type{font-size:0.85rem;color:rgba(255,255,255,0.4);margin-top:4px;}
+
+  .triad-slots{display:flex;gap:12px;justify-content:center;margin:18px 0;}
+  .triad-slot{width:80px;height:80px;border-radius:18px;border:2px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;cursor:pointer;transition:all 0.3s;position:relative;}
+  .triad-slot.filled{border-style:solid;border-color:#a78bfa;background:rgba(124,58,237,0.2);}
+  .triad-slot .slot-label{position:absolute;bottom:-20px;font-size:0.62rem;color:rgba(255,255,255,0.35);font-weight:700;white-space:nowrap;}
+  .triad-slot:hover.filled{background:rgba(244,63,94,0.2);border-color:#f43f5e;}
+
+  .note-pool{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:16px 0;}
+  .pool-note{padding:12px 16px;border-radius:14px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);font-size:1rem;font-weight:800;cursor:pointer;transition:all 0.2s;}
+  .pool-note:hover:not(.used-note){background:rgba(255,255,255,0.15);border-color:#a78bfa;transform:translateY(-2px);}
+  .pool-note.used-note{opacity:0.25;cursor:not-allowed;}
+
+  .check-btn{width:100%;padding:14px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;transition:all 0.3s;margin-top:8px;box-shadow:0 8px 25px rgba(124,58,237,0.4);}
+  .check-btn:hover{transform:translateY(-2px);}
+  .check-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+  .option-btn{padding:16px 12px;border:2px solid rgba(255,255,255,0.12);border-radius:16px;background:rgba(255,255,255,0.05);color:white;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s ease;text-align:center;}
+  .option-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);border-color:#a78bfa;transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,0.2);}
+  .option-btn.correct{background:linear-gradient(135deg,#059669,#34d399);border-color:#34d399;box-shadow:0 6px 20px rgba(52,211,153,0.4);animation:popIn 0.4s;}
+  .option-btn.wrong{background:linear-gradient(135deg,#be123c,#f43f5e);border-color:#f43f5e;animation:shake 0.4s ease;}
+  @keyframes popIn{0%{transform:scale(0.95)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  .feedback-msg{text-align:center;font-size:1rem;font-weight:800;margin-top:16px;min-height:28px;}
+  .feedback-msg.correct{color:#34d399;}
+  .feedback-msg.wrong{color:#f43f5e;}
+
+  .result-emoji{font-size:5rem;text-align:center;margin-bottom:12px;animation:bounceIn 0.6s ease;}
+  @keyframes bounceIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+  .result-title{font-size:2rem;font-weight:900;text-align:center;margin-bottom:6px;}
+  .result-pts{text-align:center;font-size:3.5rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0;}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0;}
+  .stat-box{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;text-align:center;}
+  .stat-val{font-size:1.9rem;font-weight:900;color:#fbbf24;}
+  .stat-lbl{font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:4px;}
+  .result-msg{text-align:center;color:rgba(255,255,255,0.6);font-size:0.88rem;margin:8px 0 16px;}
+  .divider{height:1px;background:rgba(255,255,255,0.07);margin:20px 0;}
+  .btn-primary{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;transition:all 0.3s;margin-top:10px;box-shadow:0 8px 25px rgba(124,58,237,0.4);}
+  .btn-primary:hover{transform:translateY(-3px);}
+  .btn-secondary{width:100%;padding:14px;border:2px solid rgba(255,255,255,0.15);border-radius:16px;background:transparent;color:rgba(255,255,255,0.7);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.3s;margin-top:10px;}
+  .btn-secondary:hover{background:rgba(255,255,255,0.08);}
+  .badge{display:inline-block;padding:4px 14px;border-radius:50px;font-size:0.72rem;font-weight:800;letter-spacing:0.5px;}
+  .badge-easy{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4);}
+  .badge-medium{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);}
+  .badge-hard{background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid rgba(244,63,94,0.4);}
+</style>
+</head>
+<body>
+<div class="bg-orbs"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<div class="container">
+
+  <!-- ══════════════ MENÚ PRINCIPAL ══════════════ -->
+  <div class="screen active" id="screen-menu">
+    <div class="card">
+      <div class="logo">🎵 TonalQuiz</div>
+      <div class="tagline">Elige un mini juego para practicar</div>
+      <div class="games-grid">
+        <div class="game-card g1" onclick="selectGame(1)">
+          <div class="game-icon">🔍</div>
+          <div class="game-info">
+            <div class="game-title">Adivina la Escala</div>
+            <div class="game-desc">Se muestran 5 acordes de una escala — identifica a qué escala mayor pertenecen.</div>
+          </div>
+          <div class="game-arrow">›</div>
+        </div>
+        <div class="game-card g2" onclick="selectGame(2)">
+          <div class="game-icon">🎯</div>
+          <div class="game-info">
+            <div class="game-title">Grado → Nota</div>
+            <div class="game-desc">Se da la escala y el número de grado — elige la nota correcta entre 4 opciones.</div>
+          </div>
+          <div class="game-arrow">›</div>
+        </div>
+        <div class="game-card g3" onclick="selectGame(3)">
+          <div class="game-icon">🎹</div>
+          <div class="game-info">
+            <div class="game-title">Armar Tríada</div>
+            <div class="game-desc">Se muestra un acorde — selecciona las 3 notas correctas que forman su tríada.</div>
+          </div>
+          <div class="game-arrow">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-level">
+    <div class="card">
+      <button class="back-btn" onclick="showScreen('screen-menu')">← Volver</button>
+      <div class="sel-title" id="sel-game-title">Adivina la Escala</div>
+      <div class="sel-sub">Elige la dificultad</div>
+      <div class="lvl-grid">
+        <button class="lvl-btn easy" onclick="startGame('easy')">
+          <span class="lvl-icon">🌱</span><span class="lvl-name">Fácil</span>
+          <span class="lvl-desc">C, G, D, F, A</span>
+        </button>
+        <button class="lvl-btn medium" onclick="startGame('medium')">
+          <span class="lvl-icon">🎸</span><span class="lvl-name">Medio</span>
+          <span class="lvl-desc">Escalas comunes</span>
+        </button>
+        <button class="lvl-btn hard" onclick="startGame('hard')">
+          <span class="lvl-icon">🔥</span><span class="lvl-name">Difícil</span>
+          <span class="lvl-desc">Todas las escalas</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-g1">
+    <div class="card">
+      <div class="hud">
+        <div class="hud-pill">❓ <span class="val" id="g1-qnum">1</span>/10</div>
+        <div class="hud-pill">⭐ <span class="val" id="g1-score">0</span> pts</div>
+        <div class="hud-pill" id="g1-lives">❤️❤️❤️</div>
+        <div id="g1-badge"></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="g1-prog" style="width:0%"></div></div>
+      <div class="q-label">🔍 ¿De qué escala mayor son estos acordes?</div>
+      <div class="scale-display" id="g1-notes"></div>
+      <div class="hints-row">
+        <button class="hint-btn" id="g1-hint-btn" onclick="g1UseHint()">💡 Revelar grado</button>
+        <div class="hint-dots"><div class="hint-dot" id="g1-dot0"></div><div class="hint-dot" id="g1-dot1"></div><div class="hint-dot" id="g1-dot2"></div></div>
+        <span class="hints-left" id="g1-hints-left">3 ayudas</span>
+      </div>
+      <div class="options-grid" id="g1-options"></div>
+      <div class="feedback-msg" id="g1-feedback"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-g2">
+    <div class="card">
+      <div class="hud">
+        <div class="hud-pill">❓ <span class="val" id="g2-qnum">1</span>/10</div>
+        <div class="hud-pill">⭐ <span class="val" id="g2-score">0</span> pts</div>
+        <div class="hud-pill" id="g2-lives">❤️❤️❤️</div>
+        <div id="g2-badge"></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="g2-prog" style="width:0%"></div></div>
+      <div class="q-label">🎯 ¿Cuál es esta nota?</div>
+      <div class="big-prompt">
+        <div class="scale-name-big" id="g2-scale-name"></div>
+        <div class="degree-big" id="g2-degree"></div>
+        <div class="degree-name-big" id="g2-degree-name"></div>
+      </div>
+      <div class="options-grid" id="g2-options"></div>
+      <div class="feedback-msg" id="g2-feedback"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-g3">
+    <div class="card">
+      <div class="hud">
+        <div class="hud-pill">❓ <span class="val" id="g3-qnum">1</span>/10</div>
+        <div class="hud-pill">⭐ <span class="val" id="g3-score">0</span> pts</div>
+        <div class="hud-pill" id="g3-lives">❤️❤️❤️</div>
+        <div id="g3-badge"></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="g3-prog" style="width:0%"></div></div>
+      <div class="q-label">🎹 Arma la tríada</div>
+      <div class="chord-prompt">
+        <div class="chord-name-big" id="g3-chord-name"></div>
+        <div class="chord-type" id="g3-chord-type"></div>
+      </div>
+      <div class="triad-slots">
+        <div class="triad-slot" id="slot0" onclick="removeFromSlot(0)"><span class="slot-label">Raíz</span></div>
+        <div class="triad-slot" id="slot1" onclick="removeFromSlot(1)"><span class="slot-label">3ª</span></div>
+        <div class="triad-slot" id="slot2" onclick="removeFromSlot(2)"><span class="slot-label">5ª</span></div>
+      </div>
+      <div class="note-pool" id="g3-pool"></div>
+      <button class="check-btn" id="g3-check" onclick="g3Check()" disabled>✓ Verificar tríada</button>
+      <div class="feedback-msg" id="g3-feedback"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-result">
+    <div class="card">
+      <div class="result-emoji" id="res-emoji">🏆</div>
+      <div class="result-title" id="res-title"></div>
+      <div class="result-pts" id="res-pts"></div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="s-correct">0</div><div class="stat-lbl">✅ Correctas</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-wrong">0</div><div class="stat-lbl">❌ Incorrectas</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-acc">0%</div><div class="stat-lbl">🎯 Precisión</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-extra">0</div><div class="stat-lbl" id="s-extra-lbl">💡 Ayudas</div></div>
+      </div>
+      <div class="result-msg" id="res-msg"></div>
+      <div class="divider"></div>
+      <button class="btn-primary" onclick="restartSame()">🔄 Jugar de nuevo</button>
+      <button class="btn-secondary" onclick="showScreen('screen-menu')">🏠 Menú principal</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATOS ACTUALIZADOS CON TODAS LAS ESCALAS MAYORES Y SUS ACORDES
+// ══════════════════════════════════════════════
+const MAJOR_SCALES = {
+  C:   {chords: ['C', 'Dm', 'Em', 'F', 'G', 'Am', 'Bm5'],       name: 'C Mayor'},
+  'C#': {chords: ['C#', 'D#m', 'E#m', 'F#', 'G#', 'A#m', 'B#m5'], name: 'C# Mayor'},
+  D:   {chords: ['D', 'Em', 'F#m', 'G', 'A', 'Bm', 'C#m5'],     name: 'D Mayor'},
+  Eb:  {chords: ['Eb', 'Fm', 'Gm', 'Ab', 'Bb', 'Cm', 'Dm5'],    name: 'Eb Mayor'},
+  E:   {chords: ['E', 'F#m', 'G#m', 'A', 'B', 'C#m', 'D#m5'],   name: 'E Mayor'},
+  F:   {chords: ['F', 'Gm', 'Am', 'Bb', 'C', 'Dm', 'Em5'],      name: 'F Mayor'},
+  'F#': {chords: ['F#', 'G#m', 'A#m', 'B', 'C#', 'D#m', 'E#m5'], name: 'F# Mayor'},
+  G:   {chords: ['G', 'Am', 'Bm', 'C', 'D', 'Em', 'F#m5'],      name: 'G Mayor'},
+  Ab:  {chords: ['Ab', 'Bbm', 'Cm', 'Db', 'Eb', 'Fm', 'Gm5'],   name: 'Ab Mayor'},
+  A:   {chords: ['A', 'Bm', 'C#m', 'D', 'E', 'F#m', 'G#m5'],    name: 'A Mayor'},
+  Bb:  {chords: ['Bb', 'Cm', 'Dm', 'Eb', 'F', 'Gm', 'Am5'],     name: 'Bb Mayor'},
+  B:   {chords: ['B', 'C#m', 'D#m', 'E', 'F#', 'G#m', 'A#m5'],  name: 'B Mayor'},
+};
+
+const EASY_KEYS   = ['C','G','D','F','A'];
+const MEDIUM_KEYS = ['C','G','D','A','E','F','Bb','Eb'];
+const HARD_KEYS   = Object.keys(MAJOR_SCALES);
+
+const ROMANS    = ['I','ii','iii','IV','V','vi','vii°'];
+const DEG_NAMES = ['Tónica','Supertónica','Mediante','Subdominante','Dominante','Superdominante','Sensible'];
+const ALL_NOTES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+// ══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let currentGame=1, currentLevel='easy';
+let qNum=0, score=0, lives=3, correct=0, wrong=0;
+let hintsLeft=3, hintsUsed=0;
+let answered=false, currentQ=null;
+const TOTAL=10;
+let lastKeyUsed = null;
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function poolForLevel(){return currentLevel==='easy'?EASY_KEYS:currentLevel==='medium'?MEDIUM_KEYS:HARD_KEYS;}
+
+function randFrom(arr) {
+    if (!arr || arr.length === 0) return null;
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randFromWithoutRepeat(arr, lastValue) {
+    // Si el arreglo tiene menos de 2 elementos, simplemente devolvemos uno aleatorio
+    if (arr.length <= 1) return randFrom(arr);
+    // Filtramos la última clave usada para evitar repeticiones consecutivas
+    const filteredArr = arr.filter(item => item !== lastValue);
+    // Si después de filtrar no quedan elementos, devolvemos uno aleatorio del original
+    if (filteredArr.length === 0) return randFrom(arr);
+    return randFrom(filteredArr);
+}
+
+function badgeHTML(lv){return `<span class="badge badge-${lv}">${lv.toUpperCase()}</span>`;}
+
+function selectGame(g){
+  currentGame=g;
+  document.getElementById('sel-game-title').textContent = g===1?'Adivina la Escala':g===2?'Grado → Nota':'Armar Tríada';
+  showScreen('screen-level');
+}
+
+function startGame(lv){
+  currentLevel=lv; 
+  qNum=0; 
+  score=0; 
+  lives=3; 
+  correct=0; 
+  wrong=0; 
+  hintsLeft=3; 
+  hintsUsed=0; 
+  lastKeyUsed = null;
+  
+  // Corrección: Llamar a la función correcta según el juego actual
+  if(currentGame===1) g1Next();
+  else if(currentGame===2) g2Next();
+  else if(currentGame===3) g3Next();
+}
+
+function restartSame(){
+  startGame(currentLevel);
+}
+
+// ══════════════════════════════════════════════
+// JUEGO 1 — ADIVINA LA ESCALA
+// ══════════════════════════════════════════════
+function g1Next(){
+  if(qNum>=TOTAL||lives<=0){showResult(hintsUsed,'💡 Ayudas usadas');return;}
+  answered=false; hintsLeft=3; qNum++;
+
+  const pool=poolForLevel();
+  // Seleccionar una clave diferente a la última utilizada
+  const key=randFromWithoutRepeat(pool, lastKeyUsed);
+  lastKeyUsed = key; // Actualizar la última clave usada
+  
+  const sc=MAJOR_SCALES[key];
+  const indices=shuffle([0,1,2,3,4,5,6]).slice(0,5);
+  const picked=indices.map(i=>({chord:sc.chords[i],deg:i,revealed:false}));
+  
+  // Generar opciones incorrectas asegurándose de que no sea la clave correcta ni la última usada
+  const possibleWrongs = pool.filter(k => k !== key);
+  const wrongs=shuffle(possibleWrongs).slice(0,3).map(k=>MAJOR_SCALES[k].name);
+  const correctAns=sc.name;
+  const options=shuffle([correctAns,...wrongs]);
+  
+  currentQ={key,sc,picked,correctAns,options};
+
+  document.getElementById('g1-qnum').textContent=qNum;
+  document.getElementById('g1-score').textContent=score;
+  document.getElementById('g1-lives').textContent=lives>0?'❤️'.repeat(lives):'💀';
+  document.getElementById('g1-prog').style.width=((qNum-1)/TOTAL*100)+'%';
+  document.getElementById('g1-feedback').textContent='';
+  document.getElementById('g1-badge').innerHTML=badgeHTML(currentLevel);
+  g1UpdateHints();
+
+  const sd=document.getElementById('g1-notes');
+  sd.innerHTML='';
+  picked.forEach((item,i)=>{
+    const c=document.createElement('div');
+    c.className='note-card'; c.id='g1-nc-'+i;
+    c.innerHTML=`<span class="note-name">${item.chord}</span><div class="revealed-degree" id="g1-deg-${i}"></div>`;
+    sd.appendChild(c);
+  });
+
+  const grid=document.getElementById('g1-options');
+  grid.innerHTML='';
+  options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn'; btn.textContent=opt;
+    btn.onclick=()=>g1Check(opt,btn);
+    grid.appendChild(btn);
+  });
+
+  showScreen('screen-g1');
+}
+
+function g1UseHint(){
+  if(hintsLeft<=0||answered) return;
+  const unrevealed=currentQ.picked.map((p,i)=>({...p,i})).filter(p=>!p.revealed);
+  if(!unrevealed.length) return;
+  const pick=unrevealed[Math.floor(Math.random()*unrevealed.length)];
+  currentQ.picked[pick.i].revealed=true;
+  document.getElementById('g1-deg-'+pick.i).textContent=ROMANS[pick.deg];
+  document.getElementById('g1-nc-'+pick.i).classList.add('degree-shown');
+  hintsLeft--; hintsUsed++;
+  g1UpdateHints();
+}
+
+function g1UpdateHints(){
+  document.getElementById('g1-hints-left').textContent=hintsLeft+' ayudas';
+  for(let i=0;i<3;i++) document.getElementById('g1-dot'+i).className='hint-dot'+(i>=hintsLeft?' used':'');
+}
+
+function g1Check(sel,btn){
+  if(answered) return; answered=true;
+  const ok=sel===currentQ.correctAns;
+  document.querySelectorAll('#g1-options .option-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===currentQ.correctAns) b.classList.add('correct');
+  });
+
+  const fb=document.getElementById('g1-feedback');
+  if(ok){
+    btn.classList.add('correct');const pts=currentLevel==='easy'?10:currentLevel==='medium'?20:30;score+=pts;correct++;
+    fb.textContent='✅ ¡Correcto! +'+pts+' pts'; fb.className='feedback-msg correct';
+  } else {
+    btn.classList.add('wrong');lives--;wrong++;
+    fb.textContent='❌ Era: '+currentQ.correctAns; fb.className='feedback-msg wrong';
+  }
+  document.getElementById('g1-score').textContent=score;
+  document.getElementById('g1-lives').textContent=lives>0?'❤️'.repeat(lives):'💀';
+
+  setTimeout(()=>{if(lives<=0){showResult(hintsUsed,'💡 Ayudas usadas');}else{g1Next();}},2000);
+}
+
+// ══════════════════════════════════════════════
+// JUEGO 2 — GRADO → NOTA
+// ══════════════════════════════════════════════
+function g2Next(){
+  if(qNum>=TOTAL||lives<=0){showResult(score,'pts');return;}
+  answered=false; qNum++;
+  const pool=poolForLevel();
+  const key=randFrom(pool);
+  const sc=MAJOR_SCALES[key];
+  const deg=Math.floor(Math.random()*7);
+  // Extraer solo la nota raíz del acorde. Mejora manejo de notas con #/b.
+  const correctNote=sc.chords[deg].replace(/m|m5|°/g, '').trim();
+  
+  // Generar todas las notas posibles sin repetir
+  const wrongs=shuffle(ALL_NOTES.filter(n=>n!==correctNote)).slice(0,3);
+  const options=shuffle([correctNote,...wrongs]);
+  currentQ={correctNote};
+  document.getElementById('g2-qnum').textContent=qNum;
+  document.getElementById('g2-score').textContent=score;
+  document.getElementById('g2-lives').textContent='❤️'.repeat(lives);
+  document.getElementById('g2-scale-name').textContent=sc.name;
+  document.getElementById('g2-degree').textContent=ROMANS[deg];
+  document.getElementById('g2-degree-name').textContent=DEG_NAMES[deg];
+  const grid=document.getElementById('g2-options');
+  grid.innerHTML='';
+  options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='option-btn'; btn.textContent=opt;
+    btn.onclick=()=>g2Check(opt,btn);
+    grid.appendChild(btn);
+  });
+  showScreen('screen-g2');
+}
+
+function g2Check(sel,btn){
+  if(answered) return; answered=true;
+  const ok=sel===currentQ.correctNote;
+  if(ok){ btn.classList.add('correct'); score+=15; correct++; }
+  else { btn.classList.add('wrong'); lives--; wrong++; }
+  setTimeout(()=>g2Next(),1500);
+}
+
+// ══════════════════════════════════════════════
+// JUEGO 3 — ARMAR TRÍADA
+// ══════════════════════════════════════════════
+function g3Next(){
+    if(qNum>=TOTAL||lives<=0){showResult(correct,'correctas');return;}
+    answered=false; qNum++; g3Slots=[null,null,null];
+    const pool=poolForLevel();
+    const key=randFrom(pool);
+    const sc=MAJOR_SCALES[key]; // Obtenemos los acordes de la escala
+    
+    // Ahora extraemos las notas raíz de los acordes de la escala
+    // Esto asegura que usemos las notas correctas con sostenidos si es necesario
+    const scaleNotes = sc.chords.map(chord => chord.replace(/m|m5|°/g, '').trim());
+    
+    const root=Math.floor(Math.random()*7);
+    // La tríada se construye usando las notas raíz extraídas de los acordes
+    const correctTriad=[
+        scaleNotes[root],
+        scaleNotes[(root+2)%7],
+        scaleNotes[(root+4)%7]
+    ];
+    const type=['Mayor','Menor','Menor','Mayor','Mayor','Menor','Disminuido'][root];
+    currentQ={correctTriad};
+    document.getElementById('g3-chord-name').textContent=sc.chords[root]; // Mostrar el acorde original
+    document.getElementById('g3-chord-type').textContent=type + ' en ' + sc.name;
+    for(let i=0;i<3;i++){
+        const sl=document.getElementById('slot'+i); sl.className='triad-slot';
+        sl.innerHTML=`<span class="slot-label">${i===0?'Raíz':i===1?'3ª':'5ª'}</span>`;
+    }
+    
+    // Generar todas las notas posibles para el pool
+    const allNotes=ALL_NOTES;
+    // Agregar notas únicas de la tríada correcta al pool junto con algunas incorrectas
+    const poolNotes=shuffle([
+        ...correctTriad,
+        ...shuffle(allNotes.filter(n=>!correctTriad.includes(n))).slice(0,4)
+    ]);
+    const p_el=document.getElementById('g3-pool'); p_el.innerHTML='';
+    poolNotes.forEach(n=>{
+        const b=document.createElement('button'); b.className='pool-note'; b.textContent=n;
+        b.onclick=()=>g3Pick(n,b); p_el.appendChild(b);
+    });
+    showScreen('screen-g3');
+}
+
+
+let g3Slots=[null,null,null];
+function g3Pick(n,b){
+  let empty=g3Slots.indexOf(null);
+  if(empty===-1) return;
+  g3Slots[empty]=n; b.classList.add('used-note');
+  const sl=document.getElementById('slot'+empty);
+  sl.className='triad-slot filled'; sl.innerHTML=n;
+  if(!g3Slots.includes(null)) document.getElementById('g3-check').disabled=false;
+}
+
+function g3Check(){
+  answered=true;
+  const ok = g3Slots.every(n=>currentQ.correctTriad.includes(n));
+  if(ok){ score+=30; correct++; } else { lives--; wrong++; }
+  setTimeout(()=>g3Next(),2000);
+}
+
+function removeFromSlot(i){
+    if(answered || !g3Slots[i]) return;
+    const note = g3Slots[i];
+    g3Slots[i] = null;
+    const sl = document.getElementById('slot'+i);
+    sl.className = 'triad-slot';
+    sl.innerHTML = `<span class="slot-label">${i===0?'Raíz':i===1?'3ª':'5ª'}</span>`;
+    document.querySelectorAll('.pool-note').forEach(b => {
+        if(b.textContent === note) b.classList.remove('used-note');
+    });
+    document.getElementById('g3-check').disabled = true;
+}
+
+function showResult(val, lbl){
+  document.getElementById('res-pts').textContent=score+' pts';
+  document.getElementById('s-correct').textContent=correct;
+  document.getElementById('s-wrong').textContent=wrong;
+  document.getElementById('s-extra').textContent=val;
+  document.getElementById('s-extra-lbl').textContent=lbl;
+  showScreen('screen-result');
+}
+</script>
+</body>
+</html>
